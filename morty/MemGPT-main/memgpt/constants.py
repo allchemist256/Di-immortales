@@ -1,8 +1,11 @@
+import hashlib
 import os
 from logging import CRITICAL, DEBUG, ERROR, INFO, NOTSET, WARN, WARNING
+import uuid
 
 MEMGPT_DIR = os.path.join(os.path.expanduser("~"), ".memgpt")
-
+# hex_string = hashlib.md5("".encode("UTF-8")).hexdigest()
+USER_ID = uuid.UUID(hex="00000000-0000-0000-0000-000000000000")
 # System prompt templating
 IN_CONTEXT_MEMORY_KEYWORD = "CORE_MEMORY"
 

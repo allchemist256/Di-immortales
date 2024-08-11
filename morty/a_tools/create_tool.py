@@ -1,6 +1,7 @@
 # from memgpt.agent import Agent
 from memgpt import create_client
 from memgpt.config import MemGPTConfig
+from memgpt.constants import USER_ID
 from memgpt.memory import ChatMemory
 from memgpt.metadata import MetadataStore
 from memgpt.utils import get_human_text, list_human_files, list_persona_files
@@ -51,8 +52,10 @@ def main():
     # read user id from config
     ms = MetadataStore(config)
     client = create_client()
-    for tool in client.list_tools():
-        print(tool.name)
+    ms.list_personas(USER_ID)
+    # for persona in
+    # for tool in client.list_tools():
+    #     print(tool.name)
     # print(len(ms.list_tools()))
     #     # Create a `LocalClient` (you can also use a `RESTClient`, see the memgpt_rest_client.py example)
 

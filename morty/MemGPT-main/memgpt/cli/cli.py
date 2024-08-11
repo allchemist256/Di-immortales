@@ -608,7 +608,7 @@ def run(
 
         # create agent
         memgpt_agent = Agent(agent_state=agent_state, interface=interface(), tools=tools)
-
+        print(memgpt_agent.agent_state.user_id)
     else:  # create new agent
         # create new agent config: override defaults with args if provided
         typer.secho("\n🧬 Creating new agent...", fg=typer.colors.WHITE)
