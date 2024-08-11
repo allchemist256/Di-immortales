@@ -599,8 +599,9 @@ def run(
         # Update the agent with any overrides
         ms.update_agent(agent_state)
         tools = []
-        for tool_name in agent_state.tools:
-            tool = ms.get_tool(tool_name, agent_state.user_id)
+        client = create_client()
+        for tool_name in client.list_tools():
+            tool = ms.get_tool(tool_name.name, agent_state.user_id)
             if tool is None:
                 typer.secho(f"Couldn't find tool {tool_name} in database, please run `memgpt add tool`", fg=typer.colors.RED)
             tools.append(tool)
@@ -680,9 +681,8 @@ def run(
                 memory=memory,
                 metadata=metadata,
             )
-            typer.secho(f"->  🛠️  {len(agent_state.tools)} tools: {', '.join([t for t in agent_state.tools])}", fg=typer.colors.WHITE)
-            tools = [ms.get_tool(tool_name, user_id=client.user_id) for tool_name in agent_state.tools]
-
+            tools = [ms.get_tool(tool_name.name, user_id=client.user_id) for tool_name in client.list_tools()]
+            typer.secho(f"->  🛠️  {len(tools)} tools: {', '.join([t.name for t in tools])}", fg=typer.colors.WHITE)
             memgpt_agent = Agent(
                 interface=interface(),
                 agent_state=agent_state,
