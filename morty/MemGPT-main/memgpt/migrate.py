@@ -253,19 +253,20 @@ def migrate_agent(agent_name: str, data_dir: str = MEMGPT_DIR, ms: Optional[Meta
             unpickler = OpenAIBackcompatUnpickler(f)
             data = unpickler.load()
 
-        from memgpt.openai_backcompat.openai_object import OpenAIObject
+        # from memgpt.openai_backcompat.openai_object import OpenAIObject
 
         def convert_openai_objects_to_dict(obj):
-            if isinstance(obj, OpenAIObject):
-                # Convert to dict or handle as needed
-                # print(f"detected OpenAIObject on {obj}")
-                return obj.to_dict_recursive()
-            elif isinstance(obj, dict):
-                return {k: convert_openai_objects_to_dict(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [convert_openai_objects_to_dict(v) for v in obj]
-            else:
-                return obj
+            raise KeyboardInterrupt
+            # if isinstance(obj, OpenAIObject):
+            #     # Convert to dict or handle as needed
+            #     # print(f"detected OpenAIObject on {obj}")
+            #     return obj.to_dict_recursive()
+            # elif isinstance(obj, dict):
+            #     return {k: convert_openai_objects_to_dict(v) for k, v in obj.items()}
+            # elif isinstance(obj, list):
+            #     return [convert_openai_objects_to_dict(v) for v in obj]
+            # else:
+            #     return obj
 
         data = convert_openai_objects_to_dict(data)
 

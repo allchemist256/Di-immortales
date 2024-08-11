@@ -14,7 +14,7 @@ import memgpt.system as system
 from memgpt.agent_store.storage import StorageConnector, TableType
 
 # import benchmark
-from memgpt.benchmark.benchmark import bench
+# from memgpt.benchmark.benchmark import bench
 from memgpt.cli.cli import (
     delete_agent,
     migrate,
@@ -56,7 +56,7 @@ app.add_typer(load_app, name="load")
 # migration command
 app.command(name="migrate")(migrate)
 # benchmark command
-app.command(name="benchmark")(bench)
+# app.command(name="benchmark")(bench)
 # delete agents
 app.command(name="delete-agent")(delete_agent)
 

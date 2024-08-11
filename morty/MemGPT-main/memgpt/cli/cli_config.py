@@ -14,22 +14,7 @@ from memgpt.config import MemGPTConfig
 from memgpt.constants import LLM_MAX_TOKENS, MEMGPT_DIR
 from memgpt.credentials import SUPPORTED_AUTH_TYPES, MemGPTCredentials
 from memgpt.data_types import EmbeddingConfig, LLMConfig, Source, User
-from memgpt.llm_api.anthropic import (
-    anthropic_get_model_list,
-    antropic_get_model_context_window,
-)
-from memgpt.llm_api.azure_openai import azure_openai_get_model_list
-from memgpt.llm_api.cohere import (
-    COHERE_VALID_MODEL_LIST,
-    cohere_get_model_context_window,
-    cohere_get_model_list,
-)
-from memgpt.llm_api.google_ai import (
-    google_ai_get_model_context_window,
-    google_ai_get_model_list,
-)
-from memgpt.llm_api.llm_api_tools import LLM_API_PROVIDER_OPTIONS
-from memgpt.llm_api.openai import openai_get_model_list
+
 from memgpt.local_llm.constants import (
     DEFAULT_ENDPOINTS,
     DEFAULT_OLLAMA_MODEL,
@@ -72,16 +57,11 @@ def configure_llm_endpoint(config: MemGPTConfig, credentials: MemGPTCredentials)
 
     # get default
     default_model_endpoint_type = config.default_llm_config.model_endpoint_type if config.default_embedding_config else None
-    if (
-        config.default_llm_config
-        and config.default_llm_config.model_endpoint_type is not None
-        and config.default_llm_config.model_endpoint_type not in [provider for provider in LLM_API_PROVIDER_OPTIONS if provider != "local"]
-    ):  # local model
+    if config.default_llm_config and config.default_llm_config.model_endpoint_type is not None:  # local model
         default_model_endpoint_type = "local"
 
     provider = questionary.select(
         "Select LLM inference provider:",
-        choices=LLM_API_PROVIDER_OPTIONS,
         default=default_model_endpoint_type,
     ).ask()
     if provider is None:
@@ -338,76 +318,67 @@ def get_model_options(
     filter_list: bool = True,
     filter_prefix: str = "gpt-",
 ) -> list:
-    try:
-        if model_endpoint_type == "openai":
-            if credentials.openai_key is None:
-                raise ValueError("Missing OpenAI API key")
-            fetched_model_options_response = openai_get_model_list(url=model_endpoint, api_key=credentials.openai_key)
+    # try:
+    #     if model_endpoint_type == "openai":
+    #         if credentials.openai_key is None:
+    #             raise ValueError("Missing OpenAI API key")
+    #         # Filter the list for "gpt" models only
+    #         if filter_list:
+    #             model_options = [obj["id"] for obj in fetched_model_options_response["data"] if obj["id"].startswith(filter_prefix)]
+    #         else:
+    #             model_options = [obj["id"] for obj in fetched_model_options_response["data"]]
 
-            # Filter the list for "gpt" models only
-            if filter_list:
-                model_options = [obj["id"] for obj in fetched_model_options_response["data"] if obj["id"].startswith(filter_prefix)]
-            else:
-                model_options = [obj["id"] for obj in fetched_model_options_response["data"]]
+    #     elif model_endpoint_type == "azure":
+    #         if credentials.azure_key is None:
+    #             raise ValueError("Missing Azure key")
+    #         if credentials.azure_version is None:
+    #             raise ValueError("Missing Azure version")
 
-        elif model_endpoint_type == "azure":
-            if credentials.azure_key is None:
-                raise ValueError("Missing Azure key")
-            if credentials.azure_version is None:
-                raise ValueError("Missing Azure version")
-            fetched_model_options_response = azure_openai_get_model_list(
-                url=model_endpoint, api_key=credentials.azure_key, api_version=credentials.azure_version
-            )
+    #         # Filter the list for "gpt" models only
+    #         if filter_list:
+    #             model_options = [obj["id"] for obj in fetched_model_options_response["data"] if obj["id"].startswith(filter_prefix)]
+    #         else:
+    #             model_options = [obj["id"] for obj in fetched_model_options_response["data"]]
 
-            # Filter the list for "gpt" models only
-            if filter_list:
-                model_options = [obj["id"] for obj in fetched_model_options_response["data"] if obj["id"].startswith(filter_prefix)]
-            else:
-                model_options = [obj["id"] for obj in fetched_model_options_response["data"]]
+    #     elif model_endpoint_type == "google_ai":
+    #         if credentials.google_ai_key is None:
+    #             raise ValueError("Missing Google AI API key")
+    #         if credentials.google_ai_service_endpoint is None:
+    #             raise ValueError("Missing Google AI service endpoint")
 
-        elif model_endpoint_type == "google_ai":
-            if credentials.google_ai_key is None:
-                raise ValueError("Missing Google AI API key")
-            if credentials.google_ai_service_endpoint is None:
-                raise ValueError("Missing Google AI service endpoint")
-            model_options = google_ai_get_model_list(
-                service_endpoint=credentials.google_ai_service_endpoint, api_key=credentials.google_ai_key
-            )
-            model_options = [str(m["name"]) for m in model_options]
-            model_options = [mo[len("models/") :] if mo.startswith("models/") else mo for mo in model_options]
+    #         model_options = [str(m["name"]) for m in model_options]
+    #         model_options = [mo[len("models/") :] if mo.startswith("models/") else mo for mo in model_options]
 
-            # TODO remove manual filtering for gemini-pro
-            model_options = [mo for mo in model_options if str(mo).startswith("gemini") and "-pro" in str(mo)]
-            # model_options = ["gemini-pro"]
+    #         # TODO remove manual filtering for gemini-pro
+    #         model_options = [mo for mo in model_options if str(mo).startswith("gemini") and "-pro" in str(mo)]
+    #         # model_options = ["gemini-pro"]
 
-        elif model_endpoint_type == "anthropic":
-            if credentials.anthropic_key is None:
-                raise ValueError("Missing Anthropic API key")
-            fetched_model_options = anthropic_get_model_list(url=model_endpoint, api_key=credentials.anthropic_key)
-            model_options = [obj["name"] for obj in fetched_model_options]
+    #     elif model_endpoint_type == "anthropic":
+    #         if credentials.anthropic_key is None:
+    #             raise ValueError("Missing Anthropic API key")
+    #         model_options = [obj["name"] for obj in fetched_model_options]
 
-        elif model_endpoint_type == "cohere":
-            if credentials.cohere_key is None:
-                raise ValueError("Missing Cohere API key")
-            fetched_model_options = cohere_get_model_list(url=model_endpoint, api_key=credentials.cohere_key)
-            model_options = [obj for obj in fetched_model_options]
+    #     elif model_endpoint_type == "cohere":
+    #         if credentials.cohere_key is None:
+    #             raise ValueError("Missing Cohere API key")
+    #         model_options = [obj for obj in fetched_model_options]
 
-        else:
-            # Attempt to do OpenAI endpoint style model fetching
-            # TODO support local auth with api-key header
-            if credentials.openllm_auth_type == "bearer_token":
-                api_key = credentials.openllm_key
-            else:
-                api_key = None
-            fetched_model_options_response = openai_get_model_list(url=model_endpoint, api_key=api_key, fix_url=True)
-            model_options = [obj["id"] for obj in fetched_model_options_response["data"]]
-            # NOTE no filtering of local model options
+    #     else:
+    #         # Attempt to do OpenAI endpoint style model fetching
+    #         # TODO support local auth with api-key header
+    #         if credentials.openllm_auth_type == "bearer_token":
+    #             api_key = credentials.openllm_key
+    #         else:
+    #             api_key = None
+    #         fetched_model_options_response = openai_get_model_list(url=model_endpoint, api_key=api_key, fix_url=True)
+    #         model_options = [obj["id"] for obj in fetched_model_options_response["data"]]
+    #         # NOTE no filtering of local model options
 
-        # list
-        return model_options
+    #     # list
+    #     return model_options
 
-    except:
-        raise Exception(f"Failed to get model list from {model_endpoint}")
+    # except:
+    raise Exception(f"Failed to get model list from {model_endpoint}")
 
 
 def configure_model(config: MemGPTConfig, credentials: MemGPTCredentials, model_endpoint_type: str, model_endpoint: str):
@@ -449,98 +420,6 @@ def configure_model(config: MemGPTConfig, credentials: MemGPTCredentials, model_
                 "Select default model (recommended: gpt-4):",
                 choices=fetched_model_options + [other_option_str],
                 default=config.default_llm_config.model if (valid_model and config.default_llm_config) else fetched_model_options[0],
-            ).ask()
-            if model is None:
-                raise KeyboardInterrupt
-
-        # Finally if the user asked to manually input, allow it
-        if model == other_option_str:
-            model = ""
-            while len(model) == 0:
-                model = questionary.text(
-                    "Enter custom model name:",
-                ).ask()
-                if model is None:
-                    raise KeyboardInterrupt
-
-    elif model_endpoint_type == "google_ai":
-        try:
-            fetched_model_options = get_model_options(
-                credentials=credentials, model_endpoint_type=model_endpoint_type, model_endpoint=model_endpoint
-            )
-        except Exception as e:
-            # NOTE: if this fails, it means the user's key is probably bad
-            typer.secho(
-                f"Failed to get model list from {model_endpoint} - make sure your API key and endpoints are correct!", fg=typer.colors.RED
-            )
-            raise e
-
-        model = questionary.select(
-            "Select default model:",
-            choices=fetched_model_options,
-            default=fetched_model_options[0],
-        ).ask()
-        if model is None:
-            raise KeyboardInterrupt
-
-    elif model_endpoint_type == "anthropic":
-        try:
-            fetched_model_options = get_model_options(
-                credentials=credentials, model_endpoint_type=model_endpoint_type, model_endpoint=model_endpoint
-            )
-        except Exception as e:
-            # NOTE: if this fails, it means the user's key is probably bad
-            typer.secho(
-                f"Failed to get model list from {model_endpoint} - make sure your API key and endpoints are correct!", fg=typer.colors.RED
-            )
-            raise e
-
-        model = questionary.select(
-            "Select default model:",
-            choices=fetched_model_options,
-            default=fetched_model_options[0],
-        ).ask()
-        if model is None:
-            raise KeyboardInterrupt
-
-    elif model_endpoint_type == "cohere":
-
-        fetched_model_options = []
-        try:
-            fetched_model_options = get_model_options(
-                credentials=credentials, model_endpoint_type=model_endpoint_type, model_endpoint=model_endpoint
-            )
-        except Exception as e:
-            # NOTE: if this fails, it means the user's key is probably bad
-            typer.secho(
-                f"Failed to get model list from {model_endpoint} - make sure your API key and endpoints are correct!", fg=typer.colors.RED
-            )
-            raise e
-
-        fetched_model_options = [m["name"] for m in fetched_model_options]
-        hardcoded_model_options = [m for m in fetched_model_options if m in COHERE_VALID_MODEL_LIST]
-
-        # First ask if the user wants to see the full model list (some may be incompatible)
-        see_all_option_str = "[see all options]"
-        other_option_str = "[enter model name manually]"
-
-        # Check if the model we have set already is even in the list (informs our default)
-        valid_model = config.default_llm_config.model in hardcoded_model_options
-        model = questionary.select(
-            "Select default model (recommended: command-r-plus):",
-            choices=hardcoded_model_options + [see_all_option_str, other_option_str],
-            default=config.default_llm_config.model if valid_model else hardcoded_model_options[0],
-        ).ask()
-        if model is None:
-            raise KeyboardInterrupt
-
-        # If the user asked for the full list, show it
-        if model == see_all_option_str:
-            typer.secho(f"Warning: not all models shown are guaranteed to work with MemGPT", fg=typer.colors.RED)
-            model = questionary.select(
-                "Select default model (recommended: command-r-plus):",
-                choices=fetched_model_options + [other_option_str],
-                default=config.default_llm_config.model if valid_model else fetched_model_options[0],
             ).ask()
             if model is None:
                 raise KeyboardInterrupt
@@ -686,72 +565,16 @@ def configure_model(config: MemGPTConfig, credentials: MemGPTCredentials, model_
         ]
 
         if model_endpoint_type == "google_ai":
-            try:
-                fetched_context_window = str(
-                    google_ai_get_model_context_window(
-                        service_endpoint=credentials.google_ai_service_endpoint, api_key=credentials.google_ai_key, model=model
-                    )
-                )
-                print(f"Got context window {fetched_context_window} for model {model} (from Google API)")
-                context_length_options = [
-                    fetched_context_window,
-                    "custom",
-                ]
-            except Exception as e:
-                print(f"Failed to get model details for model '{model}' on Google AI API ({str(e)})")
 
-            context_window_input = questionary.select(
-                "Select your model's context window (see https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versioning#gemini-model-versions):",
-                choices=context_length_options,
-                default=context_length_options[0],
-            ).ask()
-            if context_window_input is None:
-                raise KeyboardInterrupt
+            raise KeyboardInterrupt
 
         elif model_endpoint_type == "anthropic":
-            try:
-                fetched_context_window = str(
-                    antropic_get_model_context_window(url=model_endpoint, api_key=credentials.anthropic_key, model=model)
-                )
-                print(f"Got context window {fetched_context_window} for model {model}")
-                context_length_options = [
-                    fetched_context_window,
-                    "custom",
-                ]
-            except Exception as e:
-                print(f"Failed to get model details for model '{model}' ({str(e)})")
-
-            context_window_input = questionary.select(
-                "Select your model's context window (see https://docs.anthropic.com/claude/docs/models-overview):",
-                choices=context_length_options,
-                default=context_length_options[0],
-            ).ask()
-            if context_window_input is None:
-                raise KeyboardInterrupt
+            raise KeyboardInterrupt
 
         elif model_endpoint_type == "cohere":
-            try:
-                fetched_context_window = str(
-                    cohere_get_model_context_window(url=model_endpoint, api_key=credentials.cohere_key, model=model)
-                )
-                print(f"Got context window {fetched_context_window} for model {model}")
-                context_length_options = [
-                    fetched_context_window,
-                    "custom",
-                ]
-            except Exception as e:
-                print(f"Failed to get model details for model '{model}' ({str(e)})")
-
-            context_window_input = questionary.select(
-                "Select your model's context window (see https://docs.cohere.com/docs/command-r):",
-                choices=context_length_options,
-                default=context_length_options[0],
-            ).ask()
-            if context_window_input is None:
-                raise KeyboardInterrupt
+            raise KeyboardInterrupt
 
         else:
-
             # Ask the user to specify the context length
             context_window_input = questionary.select(
                 "Select your model's context window (for Mistral 7B models, this is probably 8k / 8192):",

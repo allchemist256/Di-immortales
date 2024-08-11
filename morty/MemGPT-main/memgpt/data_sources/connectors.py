@@ -166,11 +166,12 @@ class WebConnector(DirectoryConnector):
         self.html_to_text = html_to_text
 
     def generate_documents(self) -> Iterator[Tuple[str, Dict]]:  # -> Iterator[Document]:
-        from llama_index.readers.web import SimpleWebPageReader
+        # from llama_index.readers.web import SimpleWebPageReader
 
-        documents = SimpleWebPageReader(html_to_text=self.html_to_text).load_data(self.urls)
-        for document in documents:
-            yield document.text, {"url": document.id_}
+        # documents = SimpleWebPageReader(html_to_text=self.html_to_text).load_data(self.urls)
+        # for document in documents:
+        #     yield document.text, {"url": document.id_}
+        raise KeyboardInterrupt
 
 
 class VectorDBConnector(DataConnector):
@@ -202,26 +203,27 @@ class VectorDBConnector(DataConnector):
         yield self.table_name, None
 
     def generate_passages(self, documents: List[Document], chunk_size: int = 1024) -> Iterator[Tuple[str, Dict]]:  # -> Iterator[Passage]:
-        from pgvector.sqlalchemy import Vector
-        from sqlalchemy import Inspector, MetaData, Table, select
+        raise KeyboardInterrupt
+        # from pgvector.sqlalchemy import Vector
+        # from sqlalchemy import Inspector, MetaData, Table, select
 
-        metadata = MetaData()
-        # Create an inspector to inspect the database
-        inspector = Inspector.from_engine(self.engine)
-        table_names = inspector.get_table_names()
-        assert self.table_name in table_names, f"Table {self.table_name} not found in database: tables that exist {table_names}."
+        # metadata = MetaData()
+        # # Create an inspector to inspect the database
+        # inspector = Inspector.from_engine(self.engine)
+        # table_names = inspector.get_table_names()
+        # assert self.table_name in table_names, f"Table {self.table_name} not found in database: tables that exist {table_names}."
 
-        table = Table(self.table_name, metadata, autoload_with=self.engine)
+        # table = Table(self.table_name, metadata, autoload_with=self.engine)
 
-        # Prepare a select statement
-        select_statement = select(table.c[self.text_column], table.c[self.embedding_column].cast(Vector(self.embedding_dim)))
+        # # Prepare a select statement
+        # select_statement = select(table.c[self.text_column], table.c[self.embedding_column].cast(Vector(self.embedding_dim)))
 
-        # Execute the query and fetch the results
-        # TODO: paginate results
-        with self.engine.connect() as connection:
-            result = connection.execute(select_statement).fetchall()
+        # # Execute the query and fetch the results
+        # # TODO: paginate results
+        # with self.engine.connect() as connection:
+        #     result = connection.execute(select_statement).fetchall()
 
-        for text, embedding in result:
-            # assume that embeddings are the same model as in config
-            # TODO: don't re-compute embedding
-            yield text, {"embedding": embedding}
+        # for text, embedding in result:
+        #     # assume that embeddings are the same model as in config
+        #     # TODO: don't re-compute embedding
+        #     yield text, {"embedding": embedding}
