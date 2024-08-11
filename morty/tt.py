@@ -53,15 +53,15 @@ def main():
     me = client.get_human("Justin").text
     morty = client.get_persona("morty").text
     agent_state = client.create_agent(
-        name="tst",
+        name="tlt",
         memory=ChatMemory(human=me, persona=morty),
         # memory=ChatMemory(human="Justin", persona="morty"),
         metadata={"human:": "Justin", "persona": "morty"},
         tools=["get_secret"],
     )
 
+    print(f"Created agent: {agent_state.name} with ID {str(agent_state.id)}")
 
-#     # print(f"Created agent: {agent_state.name} with ID {str(agent_state.id)}")
 
 #     # # # Send a message to the agent
 #     # print(f"Created agent: {agent_state.name} with ID {str(agent_state.id)}")
@@ -80,5 +80,5 @@ def main():
 #     print(tools[-1].name)
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
