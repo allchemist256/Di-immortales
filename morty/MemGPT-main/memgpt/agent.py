@@ -1131,6 +1131,20 @@ class Agent(object):
 def save_agent(agent: Agent, ms: MetadataStore):
     """Save agent to metadata store"""
 
+    agents_human = agent.agent_state._metadata["human"]
+    agents_persona = agent.agent_state._metadata["persona"]
+
+    persona_file = f"/home/fury15/Di-immortales/morty/personalities/{agents_persona}.txt"
+    human_path = f"/home/fury15/Di-immortales/morty/personalities/{agents_human}.txt"
+    # print(agent.memory.to_dict()["human"])
+    with open(human_path, "w") as human_file:
+        human_file.write(agent.memory.to_dict()["human"]["value"])
+
+    # Overwrite the persona_file
+    with open(persona_file, "w") as persona_file_obj:
+        persona_file_obj.write(agent.memory.to_dict()["persona"]["value"])
+    # Overwrite the human_path file and save agent.memory.memory["human"]
+    # do the same for persona_file
     agent.update_state()
     agent_state = agent.agent_state
 
