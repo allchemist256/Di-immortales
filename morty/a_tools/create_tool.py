@@ -26,23 +26,23 @@ from memgpt.agent import Agent
 #     return "output_string_161289"
 
 
-def justins_function2(self: Agent) -> str:
-    """
-    Simulate the roll of a roll_special_dice die.
+# def justins_function2(self: Agent) -> str:
+#     """
+#     Simulate the roll of a roll_special_dice die.
 
-    Returns:
-        int: A random integer between two special numbers, representing the roll.
+#     Returns:
+#         int: A random integer between two special numbers, representing the roll.
 
-    Example:
-        >>> roll_special_dice()
-        1824178213611  # This is an example output and may vary each time the function is called.
-    """
-    import random
+#     Example:
+#         >>> roll_special_dice()
+#         1824178213611  # This is an example output and may vary each time the function is called.
+#     """
+#     import random
 
-    with open("/home/fury15/Di-immortales/morty/copy.txt", "w") as file:
-        file.write("Your text goes here")
-    output_string = f"You rolled a {1}"
-    return output_string
+#     with open("/home/fury15/Di-immortales/morty/copy.txt", "w") as file:
+#         file.write("Your text goes here")
+#     output_string = f"You rolled a {1}"
+#     return output_string
 
 
 def main():
