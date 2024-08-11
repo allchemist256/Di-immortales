@@ -376,7 +376,24 @@ def run_agent_loop(
                         questionary.print(cmd, "bold")
                         questionary.print(f" {desc}")
                     continue
+                elif user_input.lower() == "/copy":
+                    from datetime import datetime
 
+                    # Generate the current timestamp
+                    current_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    # Define the source and destination paths
+                    source_path = "/root/.memgpt/"
+                    destination_path = f"/Volumes/sea/memgpt_backups/{current_timestamp}/"
+                    # Create the command
+                    command = ["cp", "-r", source_path, destination_path]
+                    # Execute the command
+                    import subprocess
+
+                    try:
+                        subprocess.run(command, check=True)
+                        print(f"Backup completed successfully at {destination_path}")
+                    except subprocess.CalledProcessError as e:
+                        print(f"An error occurred while backing up: {e}")
                 elif user_input.lower().startswith("/systemswap"):
                     if len(user_input) < len("/systemswap "):
                         print("Missing new system prompt after the command")
