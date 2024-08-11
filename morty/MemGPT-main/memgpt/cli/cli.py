@@ -21,7 +21,7 @@ from memgpt.constants import CLI_WARNING_PREFIX, MEMGPT_DIR
 from memgpt.credentials import MemGPTCredentials
 from memgpt.data_types import EmbeddingConfig, LLMConfig, User
 from memgpt.log import get_logger
-from memgpt.memory import ChatMemory
+from memgpt.memory import ChatMemory, MemoryModule
 from memgpt.metadata import MetadataStore
 from memgpt.migrate import migrate_all_agents, migrate_all_sources
 from memgpt.models.pydantic_models import OptionState
@@ -32,7 +32,7 @@ from memgpt.server.server import logger as server_logger
 from memgpt.streaming_interface import (
     StreamingRefreshCLIInterface as interface,  # for printing to terminal
 )
-from memgpt.utils import open_folder_in_explorer, printd
+from memgpt.utils import get_human_text, get_persona_text, open_folder_in_explorer, printd
 
 logger = get_logger(__name__)
 
@@ -608,7 +608,21 @@ def run(
 
         # create agent
         memgpt_agent = Agent(agent_state=agent_state, interface=interface(), tools=tools)
-        print(memgpt_agent.agent_state.user_id)
+        # agents_human = memgpt_agent.agent_state._metadata["human"]
+        # agents_persona = memgpt_agent.agent_state._metadata["persona"]
+        # print(memgpt_agent.agent_state.state["memory"])
+        # memgpt_agent.memory
+        # ["human"] = MemoryModule(**get_human_text(agents_human))
+        # print(memgpt_agent.memory.memory.items())
+        # print(get_human_text(agents_human))
+        # = get_human_text(agents_human)
+
+        # print(memgpt_agent.memory.memory["persona"])
+        # = get_persona_text(agents_persona)
+
+        # print(config.persona)
+        # print(get_persona_text("morty"))
+        # print(memgpt_agent.memory.memory["persona"])
     else:  # create new agent
         # create new agent config: override defaults with args if provided
         typer.secho("\n🧬 Creating new agent...", fg=typer.colors.WHITE)

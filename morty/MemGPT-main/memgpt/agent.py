@@ -37,7 +37,9 @@ from memgpt.system import (
 from memgpt.utils import (
     count_tokens,
     create_uuid_from_string,
+    get_human_text,
     get_local_time,
+    get_persona_text,
     get_tool_call_id,
     get_utc_time,
     is_utc_datetime,
@@ -227,7 +229,14 @@ class Agent(object):
         self.system = self.agent_state.system
 
         # Initialize the memory object
-        self.memory = BaseMemory.load(self.agent_state.state["memory"])
+        agents_human = agent_state._metadata["human"]
+        agents_persona = agent_state._metadata["persona"]
+        loaded_dict = {
+            "persona": {"description": None, "limit": 2000, "value": get_persona_text(agents_persona)},
+            "human": {"description": None, "limit": 2000, "value": get_human_text(agents_human)},
+        }
+        # self.agent_state.state["memory"]
+        self.memory = BaseMemory.load(loaded_dict)
         printd("Initialized memory object", self.memory)
 
         # Interface must implement:
