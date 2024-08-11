@@ -779,26 +779,24 @@ class Agent(object):
             printd(f"step() failed\nuser_message = {user_message}\nerror = {e}")
 
             # If we got a context alert, try trimming the messages length, then try again
-            # if is_context_overflow_error(e):
-            #     # A separate API call to run a summarizer
-            #     self.summarize_messages_inplace()
-
-            #     # Try step again
-            #     return self.step(
-            #         user_message,
-            #         first_message=first_message,
-            #         first_message_retry_limit=first_message_retry_limit,
-            #         skip_verify=skip_verify,
-            #         return_dicts=return_dicts,
-            #         recreate_message_timestamp=recreate_message_timestamp,
-            #         stream=stream,
-            #         timestamp=timestamp,
-            #         inner_thoughts_in_kwargs=inner_thoughts_in_kwargs,
-            #     )
-
-            # else:
-            printd(f"step() failed with an unrecognized exception: '{str(e)}'")
-            raise e
+            if is_context_overflow_error(e):
+                # A separate API call to run a summarizer
+                self.summarize_messages_inplace()
+                # Try step again
+                return self.step(
+                    user_message,
+                    first_message=first_message,
+                    first_message_retry_limit=first_message_retry_limit,
+                    skip_verify=skip_verify,
+                    return_dicts=return_dicts,
+                    recreate_message_timestamp=recreate_message_timestamp,
+                    stream=stream,
+                    timestamp=timestamp,
+                    inner_thoughts_in_kwargs=inner_thoughts_in_kwargs,
+                )
+            else:
+                printd(f"step() failed with an unrecognized exception: '{str(e)}'")
+                raise e
 
     def summarize_messages_inplace(self, cutoff=None, preserve_last_N_messages=True, disallow_tool_as_first=True):
         assert self.messages[0]["role"] == "system", f"self.messages[0] should be system (instead got {self.messages[0]})"

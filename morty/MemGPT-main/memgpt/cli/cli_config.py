@@ -60,253 +60,59 @@ def configure_llm_endpoint(config: MemGPTConfig, credentials: MemGPTCredentials)
     if config.default_llm_config and config.default_llm_config.model_endpoint_type is not None:  # local model
         default_model_endpoint_type = "local"
 
-    provider = questionary.select(
-        "Select LLM inference provider:",
+    # backend_options_old = ["webui", "webui-legacy", "llamacpp", "koboldcpp", "ollama", "lmstudio", "lmstudio-legacy", "vllm", "openai"]
+    backend_options = builtins.list(DEFAULT_ENDPOINTS.keys())
+    # assert backend_options_old == backend_options, (backend_options_old, backend_options)
+    default_model_endpoint_type = None
+    if config.default_llm_config and config.default_llm_config.model_endpoint_type in backend_options:
+        # set from previous config
+        default_model_endpoint_type = config.default_llm_config.model_endpoint_type
+    model_endpoint_type = questionary.select(
+        "Select LLM backend (select 'openai' if you have an OpenAI compatible proxy):",
+        backend_options,
         default=default_model_endpoint_type,
     ).ask()
-    if provider is None:
+    if model_endpoint_type is None:
         raise KeyboardInterrupt
 
-    # set: model_endpoint_type, model_endpoint
-    if provider == "openai":
-        # check for key
-        if credentials.openai_key is None:
-            # allow key to get pulled from env vars
-            openai_api_key = os.getenv("OPENAI_API_KEY", None)
-            # if we still can't find it, ask for it as input
-            if openai_api_key is None:
-                while openai_api_key is None or len(openai_api_key) == 0:
-                    # Ask for API key as input
-                    openai_api_key = questionary.password(
-                        "Enter your OpenAI API key (starts with 'sk-', see https://platform.openai.com/api-keys):"
-                    ).ask()
-                    if openai_api_key is None:
-                        raise KeyboardInterrupt
-            credentials.openai_key = openai_api_key
-            credentials.save()
-        else:
-            # Give the user an opportunity to overwrite the key
-            openai_api_key = None
-            default_input = (
-                shorten_key_middle(credentials.openai_key) if credentials.openai_key.startswith("sk-") else credentials.openai_key
-            )
-            openai_api_key = questionary.password(
-                "Enter your OpenAI API key (starts with 'sk-', see https://platform.openai.com/api-keys):",
-                default=default_input,
-            ).ask()
-            if openai_api_key is None:
+    # set default endpoint
+    # if OPENAI_API_BASE is set, assume that this is the IP+port the user wanted to use
+    default_model_endpoint = os.getenv("OPENAI_API_BASE")
+    # if OPENAI_API_BASE is not set, try to pull a default IP+port format from a hardcoded set
+    if default_model_endpoint is None:
+        if model_endpoint_type in DEFAULT_ENDPOINTS:
+            default_model_endpoint = DEFAULT_ENDPOINTS[model_endpoint_type]
+            model_endpoint = questionary.text("Enter default endpoint:", default=default_model_endpoint).ask()
+            if model_endpoint is None:
                 raise KeyboardInterrupt
-            # If the user modified it, use the new one
-            if openai_api_key != default_input:
-                credentials.openai_key = openai_api_key
-                credentials.save()
-
-        model_endpoint_type = "openai"
-        model_endpoint = "https://api.openai.com/v1"
-        model_endpoint = questionary.text("Override default endpoint:", default=model_endpoint).ask()
-        if model_endpoint is None:
-            raise KeyboardInterrupt
-        provider = "openai"
-
-    elif provider == "azure":
-        # check for necessary vars
-        azure_creds = get_azure_credentials()
-        if not all([azure_creds["azure_key"], azure_creds["azure_endpoint"], azure_creds["azure_version"]]):
-            raise ValueError(
-                "Missing environment variables for Azure (see https://memgpt.readme.io/docs/endpoints#azure-openai). Please set then run `memgpt configure` again."
-            )
-        else:
-            credentials.azure_key = azure_creds["azure_key"]
-            credentials.azure_version = azure_creds["azure_version"]
-            credentials.azure_endpoint = azure_creds["azure_endpoint"]
-            if "azure_deployment" in azure_creds:
-                credentials.azure_deployment = azure_creds["azure_deployment"]
-            credentials.azure_embedding_version = azure_creds["azure_embedding_version"]
-            credentials.azure_embedding_endpoint = azure_creds["azure_embedding_endpoint"]
-            if "azure_embedding_deployment" in azure_creds:
-                credentials.azure_embedding_deployment = azure_creds["azure_embedding_deployment"]
-            credentials.save()
-
-        model_endpoint_type = "azure"
-        model_endpoint = azure_creds["azure_endpoint"]
-
-    elif provider == "google_ai":
-
-        # check for key
-        if credentials.google_ai_key is None:
-            # allow key to get pulled from env vars
-            google_ai_key = get_google_ai_credentials()
-            # if we still can't find it, ask for it as input
-            if google_ai_key is None:
-                while google_ai_key is None or len(google_ai_key) == 0:
-                    # Ask for API key as input
-                    google_ai_key = questionary.password(
-                        "Enter your Google AI (Gemini) API key (see https://aistudio.google.com/app/apikey):"
-                    ).ask()
-                    if google_ai_key is None:
-                        raise KeyboardInterrupt
-            credentials.google_ai_key = google_ai_key
-        else:
-            # Give the user an opportunity to overwrite the key
-            google_ai_key = None
-            default_input = shorten_key_middle(credentials.google_ai_key)
-
-            google_ai_key = questionary.password(
-                "Enter your Google AI (Gemini) API key (see https://aistudio.google.com/app/apikey):",
-                default=default_input,
-            ).ask()
-            if google_ai_key is None:
-                raise KeyboardInterrupt
-            # If the user modified it, use the new one
-            if google_ai_key != default_input:
-                credentials.google_ai_key = google_ai_key
-
-        default_input = os.getenv("GOOGLE_AI_SERVICE_ENDPOINT", None)
-        if default_input is None:
-            default_input = "generativelanguage"
-        google_ai_service_endpoint = questionary.text(
-            "Enter your Google AI (Gemini) service endpoint (see https://ai.google.dev/api/rest):",
-            default=default_input,
-        ).ask()
-        credentials.google_ai_service_endpoint = google_ai_service_endpoint
-
-        # write out the credentials
-        credentials.save()
-
-        model_endpoint_type = "google_ai"
-
-    elif provider == "anthropic":
-        # check for key
-        if credentials.anthropic_key is None:
-            # allow key to get pulled from env vars
-            anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", None)
-            # if we still can't find it, ask for it as input
-            if anthropic_api_key is None:
-                while anthropic_api_key is None or len(anthropic_api_key) == 0:
-                    # Ask for API key as input
-                    anthropic_api_key = questionary.password(
-                        "Enter your Anthropic API key (starts with 'sk-', see https://console.anthropic.com/settings/keys):"
-                    ).ask()
-                    if anthropic_api_key is None:
-                        raise KeyboardInterrupt
-            credentials.anthropic_key = anthropic_api_key
-            credentials.save()
-        else:
-            # Give the user an opportunity to overwrite the key
-            anthropic_api_key = None
-            default_input = (
-                shorten_key_middle(credentials.anthropic_key) if credentials.anthropic_key.startswith("sk-") else credentials.anthropic_key
-            )
-            anthropic_api_key = questionary.password(
-                "Enter your Anthropic API key (starts with 'sk-', see https://console.anthropic.com/settings/keys):",
-                default=default_input,
-            ).ask()
-            if anthropic_api_key is None:
-                raise KeyboardInterrupt
-            # If the user modified it, use the new one
-            if anthropic_api_key != default_input:
-                credentials.anthropic_key = anthropic_api_key
-                credentials.save()
-
-        model_endpoint_type = "anthropic"
-        model_endpoint = "https://api.anthropic.com/v1"
-        model_endpoint = questionary.text("Override default endpoint:", default=model_endpoint).ask()
-        if model_endpoint is None:
-            raise KeyboardInterrupt
-        provider = "anthropic"
-
-    elif provider == "cohere":
-        # check for key
-        if credentials.cohere_key is None:
-            # allow key to get pulled from env vars
-            cohere_api_key = os.getenv("COHERE_API_KEY", None)
-            # if we still can't find it, ask for it as input
-            if cohere_api_key is None:
-                while cohere_api_key is None or len(cohere_api_key) == 0:
-                    # Ask for API key as input
-                    cohere_api_key = questionary.password("Enter your Cohere API key (see https://dashboard.cohere.com/api-keys):").ask()
-                    if cohere_api_key is None:
-                        raise KeyboardInterrupt
-            credentials.cohere_key = cohere_api_key
-            credentials.save()
-        else:
-            # Give the user an opportunity to overwrite the key
-            cohere_api_key = None
-            default_input = (
-                shorten_key_middle(credentials.cohere_key) if credentials.cohere_key.startswith("sk-") else credentials.cohere_key
-            )
-            cohere_api_key = questionary.password(
-                "Enter your Cohere API key (see https://dashboard.cohere.com/api-keys):",
-                default=default_input,
-            ).ask()
-            if cohere_api_key is None:
-                raise KeyboardInterrupt
-            # If the user modified it, use the new one
-            if cohere_api_key != default_input:
-                credentials.cohere_key = cohere_api_key
-                credentials.save()
-
-        model_endpoint_type = "cohere"
-        model_endpoint = "https://api.cohere.ai/v1"
-        model_endpoint = questionary.text("Override default endpoint:", default=model_endpoint).ask()
-        if model_endpoint is None:
-            raise KeyboardInterrupt
-        provider = "cohere"
-
-    else:  # local models
-        # backend_options_old = ["webui", "webui-legacy", "llamacpp", "koboldcpp", "ollama", "lmstudio", "lmstudio-legacy", "vllm", "openai"]
-        backend_options = builtins.list(DEFAULT_ENDPOINTS.keys())
-        # assert backend_options_old == backend_options, (backend_options_old, backend_options)
-        default_model_endpoint_type = None
-        if config.default_llm_config and config.default_llm_config.model_endpoint_type in backend_options:
-            # set from previous config
-            default_model_endpoint_type = config.default_llm_config.model_endpoint_type
-        model_endpoint_type = questionary.select(
-            "Select LLM backend (select 'openai' if you have an OpenAI compatible proxy):",
-            backend_options,
-            default=default_model_endpoint_type,
-        ).ask()
-        if model_endpoint_type is None:
-            raise KeyboardInterrupt
-
-        # set default endpoint
-        # if OPENAI_API_BASE is set, assume that this is the IP+port the user wanted to use
-        default_model_endpoint = os.getenv("OPENAI_API_BASE")
-        # if OPENAI_API_BASE is not set, try to pull a default IP+port format from a hardcoded set
-        if default_model_endpoint is None:
-            if model_endpoint_type in DEFAULT_ENDPOINTS:
-                default_model_endpoint = DEFAULT_ENDPOINTS[model_endpoint_type]
+            while not utils.is_valid_url(model_endpoint):
+                typer.secho(f"Endpoint must be a valid address", fg=typer.colors.YELLOW)
                 model_endpoint = questionary.text("Enter default endpoint:", default=default_model_endpoint).ask()
                 if model_endpoint is None:
                     raise KeyboardInterrupt
-                while not utils.is_valid_url(model_endpoint):
-                    typer.secho(f"Endpoint must be a valid address", fg=typer.colors.YELLOW)
-                    model_endpoint = questionary.text("Enter default endpoint:", default=default_model_endpoint).ask()
-                    if model_endpoint is None:
-                        raise KeyboardInterrupt
-            elif config.default_llm_config and config.default_llm_config.model_endpoint:
+        elif config.default_llm_config and config.default_llm_config.model_endpoint:
+            model_endpoint = questionary.text("Enter default endpoint:", default=config.default_llm_config.model_endpoint).ask()
+            if model_endpoint is None:
+                raise KeyboardInterrupt
+            while not utils.is_valid_url(model_endpoint):
+                typer.secho(f"Endpoint must be a valid address", fg=typer.colors.YELLOW)
                 model_endpoint = questionary.text("Enter default endpoint:", default=config.default_llm_config.model_endpoint).ask()
                 if model_endpoint is None:
                     raise KeyboardInterrupt
-                while not utils.is_valid_url(model_endpoint):
-                    typer.secho(f"Endpoint must be a valid address", fg=typer.colors.YELLOW)
-                    model_endpoint = questionary.text("Enter default endpoint:", default=config.default_llm_config.model_endpoint).ask()
-                    if model_endpoint is None:
-                        raise KeyboardInterrupt
-            else:
-                # default_model_endpoint = None
-                model_endpoint = None
+        else:
+            # default_model_endpoint = None
+            model_endpoint = None
+            model_endpoint = questionary.text("Enter default endpoint:").ask()
+            if model_endpoint is None:
+                raise KeyboardInterrupt
+            while not utils.is_valid_url(model_endpoint):
+                typer.secho(f"Endpoint must be a valid address", fg=typer.colors.YELLOW)
                 model_endpoint = questionary.text("Enter default endpoint:").ask()
                 if model_endpoint is None:
                     raise KeyboardInterrupt
-                while not utils.is_valid_url(model_endpoint):
-                    typer.secho(f"Endpoint must be a valid address", fg=typer.colors.YELLOW)
-                    model_endpoint = questionary.text("Enter default endpoint:").ask()
-                    if model_endpoint is None:
-                        raise KeyboardInterrupt
-        else:
-            model_endpoint = default_model_endpoint
-        assert model_endpoint, f"Environment variable OPENAI_API_BASE must be set."
+    else:
+        model_endpoint = default_model_endpoint
+    assert model_endpoint, f"Environment variable OPENAI_API_BASE must be set."
 
     return model_endpoint_type, model_endpoint
 
