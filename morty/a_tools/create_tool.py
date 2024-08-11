@@ -52,7 +52,7 @@ def main():
     # read user id from config
     ms = MetadataStore(config)
     client = create_client()
-    ms.list_personas(USER_ID)
+    # ms.list_personas(USER_ID)
     # for persona in
     # for tool in client.list_tools():
     #     print(tool.name)
