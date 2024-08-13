@@ -6,6 +6,8 @@ from memgpt.metadata import MetadataStore
 config = MemGPTConfig.load()
 ms = MetadataStore(config)
 client = create_client()
+
+ms.delete_source(ms.list_sources(USER_ID)[0].id)
 # for agent in ms.list_agents(USER_ID):
 #     # print(agent.name)
 #     if agent.name != "Morty":

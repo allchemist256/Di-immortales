@@ -3,3 +3,17 @@ python -m vllm.entrypoints.openai.api_server  --model /root/.cache/huggingface/h
 https://memgpt.readme.io/docs/index
 https://docs.vllm.ai/en/latest/getting_started/quickstart.html
 https://huggingface.co/Qwen/Qwen2-7B-Instruct
+
+
+Adding sources:
+memgpt load directory --name <NAME> \
+    [--input-dir <DIRECTORY>] [--input-files <FILE1> <FILE2>...] [--recursive]
+
+then:
+memgpt run 
+...
+> Enter your message: /attach
+? Select data source (Use arrow keys)
+ » short-stories
+   arxiv
+   memgpt-docs
