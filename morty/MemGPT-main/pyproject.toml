@@ -40,7 +40,7 @@ sqlalchemy-json = "^0.7.0"
 fastapi = {version = "^0.104.1", optional = true}
 uvicorn = {version = "^0.24.0.post1", optional = true}
 pydantic = "^2.7.4"
-pyautogen = {version = "0.2.22", optional = true}
+ag2 = {version = "0.2.22", optional = true}
 html2text = "^2020.1.16"
 docx2txt = "^0.8"
 sqlalchemy = "^2.0.25"
@@ -72,7 +72,7 @@ postgres = ["pgvector", "pg8000", "psycopg2-binary"]
 milvus = ["pymilvus"]
 dev = ["pytest", "pytest-asyncio", "pexpect", "black", "pre-commit", "datasets", "pyright", "pytest-order", "autoflake", "isort"]
 server = ["websockets", "fastapi", "uvicorn"]
-autogen = ["pyautogen"]
+autogen = ["ag2"]
 qdrant = ["qdrant-client"]
 ollama = ["llama-index-embeddings-ollama"]
 
